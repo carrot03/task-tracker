@@ -1,144 +1,51 @@
-# Task Tracker API
+## Final Project
 
-A minimal mid course project: a Python/FastAPI REST API for managing tasks with in-memory storage (see ADR-001). There is no authentication, no database, and no persistence across server restarts.
+Branch reviewed: final-project
 
-## Architecture
 
-- **FastAPI** — HTTP API framework
-- **Pydantic** — request/response validation (models added in later modules)
-- **In-memory store** — module-level Python dictionary (added in later modules)
-- **No auth, no Docker** — a static task-board frontend is served by FastAPI
+### What this submission demonstrates
+- Existing Task Tracker app still runs inside the intended course scope.
+- CI runs the pytest suite on push and/or pull request.
+- Docker image builds and runs with /health returning 200.
+- AI review, security, and ownership evidence is in docs/.
 
-## Project structure
 
-```
-task-tracker-api/
-├── app/
-│   ├── main.py          # FastAPI application entry point
-│   ├── models/          # Pydantic schemas
-│   ├── routers/         # Route handlers
-│   ├── store/           # In-memory task dictionary
-│   ├── __init__.py
-│   ├── business_rules.py
-│   └── main.py
-├── assets/              # Assets like pictures
-├── docs/
-│   └── midcourse/       # Documentation files
-├── frontend/
-│   └── index.html       # Static task-board UI, served at /
-├── tests/
-│   ├── __init__.py 
-│   ├── conftest.py
-│   ├── test_health.py
-│   ├── test_overdue.py
-│   ├── test_tags.py
-│   ├── test_tasks.py
-│   └── verify_a.py
-├── venv/
-├── .env.example
-├── .gitignore
-├── README.md
-└── requirements.txt
-```
-
-## Setup
-
-1. **Create and activate a virtual environment**
-
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-
-   Windows PowerShell:
-
-   ```powershell
-   python -m venv venv
-   .\venv\Scripts\Activate.ps1
-   ```
-
-2. **Install dependencies**
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-   After installation, verify pinned versions match your environment:
-
-   ```bash
-   pip freeze
-   ```
-
-   Update `requirements.txt` if needed.
-
-3. **Configure environment**
-
-   ```bash
-   cp .env.example .env
-   ```
-
-   Windows PowerShell:
-
-   ```powershell
-   Copy-Item .env.example .env
-   ```
-
-## Run the application
-
-From the project root (with the virtual environment active):
-
+### How to run locally
 ```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+
 uvicorn app.main:app --reload --port 8000
 ```
+Frontend and API are both served from http://localhost:8000 (frontend at `/`, API under `/tasks`, `/tags`, `/health`).
 
-### Open the frontend
 
-With the backend running, open the task board in a browser:
-
-```
-http://127.0.0.1:8000/
-```
-
-The UI is served by the API itself, so no separate frontend server is needed.
-
-### Run tests
-
-From the project root (with the virtual environment active), run:
-
+### How to run tests
 ```bash
-python -m pytest
+source venv/bin/activate
+python3 -m pytest
 ```
+To run a single file or test: `python3 -m pytest tests/test_tags.py` or `python3 -m pytest tests/test_tags.py::test_name`.
 
-## Test the health endpoint
 
+### How to run with Docker
 ```bash
-curl http://127.0.0.1:8000/health
+docker build -t task-tracker .
+docker run --rm -p 8000:8000 task-tracker
+curl http://localhost:8000/health
 ```
 
-Expected response shape (timestamp varies):
 
-```json
-{
-  "status": "ok",
-  "timestamp": "2026-07-06T19:33:00.123456+00:00"
-}
-```
+### Evidence files
+- docs/release-evidence.md
+- docs/final-ai-review.md
+- docs/ai-playbook.md
+- docs/module5/*
 
-## API documentation (Swagger)
 
-Open in your browser:
-
-```
-http://127.0.0.1:8000/docs
-```
-
-Interactive OpenAPI docs are served automatically by FastAPI.
-
-## Mid-course project features
-
-This submission adds two end-to-end features:
-
-- **Tags/labels:** create tags, assign them to tasks, display tag chips, and filter by tag.
-- **Due dates and overdue filtering:** assign optional due dates, display overdue state, and filter incomplete past-due tasks.
-
-The project evidence is in [`docs/midcourse/`](docs/midcourse/), including user stories, the decision record, prompt log, verification record, and reflection.
+### AI assistance summary
+AI helped draft or review: CI, Docker, docs, security.
+I verified the work by: tests , diff review, Docker, /health, manual scan.
+One AI suggestion I rejected or corrected: AI suggested building more robust app using authentication and secrets but I rejected that since it is not part of the project scope.

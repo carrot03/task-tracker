@@ -101,8 +101,9 @@ docker run -p 8000:8000 task-tracker
 - **One task per thread**: scope each conversation/thread to a single, clearly
   stated task. If the user asks for something unrelated mid-thread, flag that it's
   a new task rather than silently expanding scope.
-- **No `app/` changes without explicit approval**: do not modify anything under
-  `app/` (routes, models, store, business rules) unless the user has explicitly
+- **No `app/` or `frontend/` changes without explicit approval**: do not modify
+  anything under `app/` (routes, models, store, business rules) or `frontend/`
+  (the static frontend served via `StaticFiles`) unless the user has explicitly
   approved that specific change in this thread. This file, `AGENTS.md`, is the one
   exception the agent may write to when asked to draft/update it.
 
