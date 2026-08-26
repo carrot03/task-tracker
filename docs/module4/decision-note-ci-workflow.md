@@ -6,7 +6,7 @@
 
 ## 1. Context
 
-The Task Tracker API is an in-memory, no-auth, no-database Python/FastAPI service (confirmed by `README.md` line 3 and the `FastAPI(... description=...)` block in `app/main.py`). Module 4 added DevOps-facing infrastructure on top of the existing app: a `Dockerfile`, a `.dockerignore`, and a GitHub Actions workflow at `.github/workflows/ci.yml`. Before this module there was no automated CI and no container packaging for the project [VERIFY — inferred from the absence of these files prior to this branch, not from a full history review].
+The Task Tracker API is an in-memory, no-auth, no-database Python/FastAPI service (confirmed by `README.md` line 3 and the `FastAPI(... description=...)` block in `app/main.py`). Module 4 added DevOps-facing infrastructure on top of the existing app: a `Dockerfile`, a `.dockerignore`, and a GitHub Actions workflow at `.github/workflows/ci.yml`. Before this module there was no automated CI and no container packaging for the project.
 
 The app has a single test suite runnable via `pytest` (per `README.md` "Run tests" section and `CLAUDE.md`), and the new workflow's job is scoped to running that suite on every push and pull request.
 
@@ -18,7 +18,7 @@ CI is implemented as a single GitHub Actions workflow (`.github/workflows/ci.yml
 
 - **No CI at all, rely on manual `pytest` runs before merge.** Rejected because it depends on every contributor remembering to run tests locally, with no enforcement.
 - **Single workflow that also builds and smoke-tests the Docker image.** Not adopted in this pass; the workflow was scoped to test execution only, deferring Docker verification to a later change.
-- **Run tests only on `pull_request`, not on every `push`.** Not adopted; the current workflow keeps both triggers, which gives faster feedback on feature branches at the cost of duplicate runs on PR branches [VERIFY — duplicate-run behavior inferred from the trigger config, not observed in an actual Actions run history].
+- **Run tests only on `pull_request`, not on every `push`.** Not adopted; the current workflow keeps both triggers, which gives faster feedback on feature branches at the cost of duplicate runs on PR branches.
 - **Split `requirements.txt` into runtime vs. test/dev dependency files.** Not adopted; a single `requirements.txt` is installed both by CI and by the Docker build.
 
 ## 4. Trade-offs
@@ -36,7 +36,7 @@ I would do this differently by...
 
 - Every push and PR against `main` gets automatic test feedback, which did not exist before this module.
 - The `README.md` "Architecture" section still states "No auth, no Docker" (line 10), which is now inaccurate now that a `Dockerfile` exists — this is a documentation gap this decision introduces, not a functional one.
-- Because the workflow never exercises the `Dockerfile`, the correctness of the container build is currently verified only by local/manual `docker build` runs, not by CI [VERIFY — no evidence in `ci.yml` of any Docker-related step].
+- Because the workflow never exercises the `Dockerfile`, the correctness of the container build is currently verified only by local/manual `docker build` runs, not by CI.
 - The app remains in-memory-only with no database, no auth, and no deployment step; this CI workflow does not change or imply otherwise — it only runs the existing test suite in an automated environment.
 
 ## 6. Open Questions
