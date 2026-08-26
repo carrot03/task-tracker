@@ -1,6 +1,6 @@
 # Task Tracker API
 
-A minimal **Module 1** learning project: a Python/FastAPI REST API for managing tasks with in-memory storage (see ADR-001). There is no authentication, no database, and no persistence across server restarts.
+A minimal mid course project: a Python/FastAPI REST API for managing tasks with in-memory storage (see ADR-001). There is no authentication, no database, and no persistence across server restarts.
 
 ## Architecture
 
@@ -14,19 +14,31 @@ A minimal **Module 1** learning project: a Python/FastAPI REST API for managing 
 ```
 task-tracker-api/
 ├── app/
-│   ├── __init__.py
 │   ├── main.py          # FastAPI application entry point
 │   ├── models/          # Pydantic schemas
 │   ├── routers/         # Route handlers
-│   └── store/           # In-memory task dictionary
-├── tests/
-│   └── __init__.py 
+│   ├── store/           # In-memory task dictionary
+│   ├── __init__.py
+│   ├── business_rules.py
+│   └── main.py
+├── assets/              # Assets like pictures
+├── docs/
+│   └── midcourse/       # Documentation files
 ├── frontend/
 │   └── index.html       # Static task-board UI, served at /
+├── tests/
+│   ├── __init__.py 
+│   ├── conftest.py
+│   ├── test_health.py
+│   ├── test_overdue.py
+│   ├── test_tags.py
+│   ├── test_tasks.py
+│   └── verify_a.py
+├── venv/
 ├── .env.example
 ├── .gitignore
-├── requirements.txt
-└── README.md
+├── README.md
+└── requirements.txt
 ```
 
 ## Setup
