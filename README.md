@@ -1,3 +1,6 @@
+# Link to project on Github: 
+https://github.com/carrot03/task-tracker/tree/mid-course-project
+
 # Task Tracker API
 
 A minimal mid course project: a Python/FastAPI REST API for managing tasks with in-memory storage (see ADR-001). There is no authentication, no database, and no persistence across server restarts.
