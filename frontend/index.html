@@ -151,84 +151,6 @@
         box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.18);
     }
 
-    .header-actions {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        flex-wrap: wrap;
-    }
-
-    .tag-filter {
-        min-height: 3rem;
-        padding: 0 0.8rem;
-        max-width: 180px;
-    }
-
-    .tag-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.35rem;
-        margin: 0 0 0.75rem;
-    }
-
-    .tag-pill {
-        padding: 0.15rem 0.5rem;
-        border-radius: 999px;
-        background: rgba(37, 99, 235, 0.12);
-        color: var(--blue-strong);
-        font-size: 0.8rem;
-        font-weight: 700;
-    }
-
-    .tag-checkboxes {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-        gap: 0.5rem;
-        padding: 0.75rem;
-        border: 1px solid var(--border);
-        border-radius: 1rem;
-        background: var(--surface-strong);
-    }
-
-    .tag-checkbox-label {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        min-width: 0;
-        padding: 0.4rem 0.5rem;
-        border-radius: 0.65rem;
-        cursor: pointer;
-        font-size: 0.9rem;
-    }
-
-    .tag-checkbox-label:hover {
-        background: rgba(37, 99, 235, 0.08);
-    }
-
-    .tag-checkbox-label input {
-        accent-color: var(--blue);
-    }
-
-    .tag-checkboxes-empty {
-        margin: 0;
-        color: var(--muted);
-        font-size: 0.9rem;
-    }
-
-    fieldset.form-field {
-        min-inline-size: 0;
-        margin: 0;
-        padding: 0;
-        border: 0;
-    }
-
-    fieldset.form-field legend {
-        padding: 0;
-        font-size: 0.95rem;
-        font-weight: 700;
-        color: var(--text);
-    }
-
     .modal {
         position: fixed;
         inset: 0;
@@ -285,16 +207,6 @@
         padding: 1.5rem;
         display: grid;
         gap: 1.1rem;
-        flex: 1;
-        min-height: 0;
-        overflow-y: auto;
-    }
-
-    #task-form {
-        display: flex;
-        flex: 1;
-        flex-direction: column;
-        min-height: 0;
     }
 
     .form-field {
@@ -474,17 +386,6 @@
         color: #166534;
     }
 
-    .due-date {
-        margin: 0 0 0.75rem;
-        color: var(--muted);
-        font-size: 0.9rem;
-    }
-
-    .due-date.overdue {
-        color: #b91c1c;
-        font-weight: 700;
-    }
-
     .skeleton,
     .empty-placeholder,
     .error-card {
@@ -568,18 +469,8 @@
                 <h1>Welcome to My Web Application</h1>
                 <p>Drag tasks between columns to update their status</p>
             </div>
-            <div class="header-actions">
-                <select id="tag-filter" class="select tag-filter" aria-label="Filter tasks by tag">
-                    <option value="">All tags</option>
-                </select>
-                <select id="overdue-filter" class="select tag-filter" aria-label="Filter tasks by due date">
-                    <option value="">All due dates</option>
-                    <option value="true">Overdue</option>
-                </select>
-                <button id="new-tag-button" class="button secondary" type="button">New Tag</button>
-                <button id="new-task-button" class="button" type="button">New Task</button>
-                <button id="theme-toggle" class="button secondary" type="button">🌙 Dark</button>
-            </div>
+            <button id="new-task-button" class="button" type="button">New Task</button>
+            <button id="theme-toggle" class="button secondary" type="button">🌙 Dark</button>
         </div>
     </header>
 
@@ -613,11 +504,6 @@
                     </div>
 
                     <div class="form-field">
-                        <label for="task-due-date">Due date</label>
-                        <input id="task-due-date" class="input" name="due_date" type="date" />
-                    </div>
-
-                    <div class="form-field">
                         <label for="task-priority">Priority</label>
                         <select id="task-priority" class="select" name="priority">
                             <option value="High">High</option>
@@ -634,11 +520,6 @@
                             <option value="Done">Done</option>
                         </select>
                     </div>
-
-                    <fieldset class="form-field">
-                        <legend>Tags</legend>
-                        <div id="task-tags" class="tag-checkboxes"></div>
-                    </fieldset>
                 </div>
 
                 <div class="modal-footer">
@@ -650,8 +531,7 @@
     </div>
 
     <script>
-        // The API and board are served by the same FastAPI application.
-        const API_BASE = "";
+        const API_BASE = "http://localhost:8000";
         const STATUSES = ["ToDo", "InProgress", "Done"];
         const STATUS_LABELS = {
             ToDo: "ToDo",
@@ -662,9 +542,6 @@
 
         const state = {
             tasks: [],
-            tags: [],
-            selectedTagId: "",
-            overdueOnly: false,
             boardState: "loading",
             dragError: "",
             modal: null
@@ -679,14 +556,9 @@
             titleField: document.getElementById("task-title"),
             descriptionField: document.getElementById("task-description"),
             assigneeField: document.getElementById("task-assignee"),
-            dueDateField: document.getElementById("task-due-date"),
             priorityField: document.getElementById("task-priority"),
             statusField: document.getElementById("task-status"),
-            tagField: document.getElementById("task-tags"),
-            tagFilter: document.getElementById("tag-filter"),
-            overdueFilter: document.getElementById("overdue-filter"),
             newTaskButton: document.getElementById("new-task-button"),
-            newTagButton: document.getElementById("new-tag-button"),
             modalCloseButton: document.getElementById("modal-close-button"),
             modalCancelButton: document.getElementById("modal-cancel-button"),
             themeToggle: document.getElementById("theme-toggle")
@@ -761,65 +633,9 @@
                 title: String(data.title || "").trim(),
                 description: String(data.description || "").trim(),
                 assignee: String(data.assignee || "").trim(),
-                due_date: data.due_date || null,
                 priority: normalizePriority(data.priority),
-                status: STATUSES.includes(data.status) ? data.status : "ToDo",
-                tag_ids: Array.from(
-                    elements.tagField.querySelectorAll('input[type="checkbox"]:checked'),
-                    (checkbox) => checkbox.value
-                )
+                status: STATUSES.includes(data.status) ? data.status : "ToDo"
             };
-        };
-
-        // A due date has no time or timezone. Use the viewer's local calendar
-        // date so a task due today does not become overdue at the API server's
-        // UTC day boundary.
-        const isTaskOverdue = (task) => {
-            if (!task.due_date || task.status === "Done") return false;
-
-            const [year, month, day] = task.due_date.split("-").map(Number);
-            const dueDate = new Date(year, month - 1, day);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            return dueDate < today;
-        };
-
-        const populateTagOptions = () => {
-            const selectedTaskTags = new Set(
-                Array.from(
-                    elements.tagField.querySelectorAll('input[type="checkbox"]:checked'),
-                    (checkbox) => checkbox.value
-                )
-            );
-            elements.tagField.replaceChildren();
-            elements.tagFilter.replaceChildren(createElement("option", { value: "" }, "All tags"));
-
-            state.tags.forEach((tag) => {
-                const checkbox = createElement("input", {
-                    type: "checkbox",
-                    name: "tag_ids",
-                    value: tag.id,
-                    checked: selectedTaskTags.has(tag.id)
-                });
-                elements.tagField.appendChild(createElement(
-                    "label",
-                    { className: "tag-checkbox-label" },
-                    checkbox,
-                    tag.name
-                ));
-                elements.tagFilter.appendChild(createElement("option", {
-                    value: tag.id,
-                    selected: state.selectedTagId === tag.id
-                }, tag.name));
-            });
-
-            if (state.tags.length === 0) {
-                elements.tagField.appendChild(createElement(
-                    "p",
-                    { className: "tag-checkboxes-empty" },
-                    "No tags available. Create a tag to add one."
-                ));
-            }
         };
 
         const openModal = (mode, task = null) => {
@@ -831,13 +647,8 @@
                 elements.titleField.value = task.title || "";
                 elements.descriptionField.value = task.description || "";
                 elements.assigneeField.value = task.assignee || "";
-                elements.dueDateField.value = task.due_date || "";
                 elements.priorityField.value = normalizePriority(task.priority);
                 elements.statusField.value = STATUSES.includes(task.status) ? task.status : "ToDo";
-                const tagIds = new Set((task.tags || []).map((tag) => tag.id));
-                elements.tagField.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
-                    checkbox.checked = tagIds.has(checkbox.value);
-                });
             } else {
                 elements.taskForm.reset();
                 elements.priorityField.value = "Low";
@@ -900,18 +711,8 @@
             render();
 
             try {
-                const params = new URLSearchParams();
-                if (state.selectedTagId) params.set("tag_id", state.selectedTagId);
-                const query = params.size ? `?${params.toString()}` : "";
-                const [tags, tasks] = await Promise.all([
-                    fetchJson(`${API_BASE}/tags`),
-                    fetchJson(`${API_BASE}/tasks${query}`)
-                ]);
-                state.tags = Array.isArray(tags) ? tags : [];
-                state.tasks = (Array.isArray(tasks) ? tasks : []).filter(
-                    (task) => !state.overdueOnly || isTaskOverdue(task)
-                );
-                populateTagOptions();
+                const data = await fetchJson(`${API_BASE}/tasks`);
+                state.tasks = Array.isArray(data) ? data : [];
                 state.boardState = "ready";
             } catch {
                 state.boardState = "error";
@@ -927,12 +728,11 @@
             render();
 
             try {
-                const updatedTask = await fetchJson(`${API_BASE}/tasks/${task.id}`, {
+                await fetchJson(`${API_BASE}/tasks/${task.id}`, {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ status: targetStatus })
                 });
-                Object.assign(task, updatedTask);
             } catch (error) {
                 task.status = previousStatus;
                 const message =
@@ -976,14 +776,7 @@
 
                 state.boardState = "ready";
                 closeModal();
-
-                // Reapply active filters because an edit or new task may no
-                // longer belong in the current view.
-                if (state.selectedTagId || state.overdueOnly) {
-                    await fetchTasks();
-                } else {
-                    render();
-                }
+                render();
             } catch (error) {
                 const message =
                     error.payload?.message ||
@@ -996,22 +789,6 @@
                 }
 
                 setModalError(message);
-            }
-        };
-
-        const createTag = async () => {
-            const name = window.prompt("Tag name:");
-            if (!name || !name.trim()) return;
-
-            try {
-                await fetchJson(`${API_BASE}/tags`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ name })
-                });
-                await fetchTasks();
-            } catch (error) {
-                setDragError(error.payload?.detail || "Unable to create tag.");
             }
         };
 
@@ -1050,26 +827,9 @@
                 style: "margin:0 0 0.75rem;color:var(--muted);font-size:0.95rem;line-height:1.5;"
             }, task.description || "No description provided.");
 
-            const tags = createElement(
-                "div",
-                { className: "tag-list" },
-                (task.tags || []).map((tag) => createElement("span", { className: "tag-pill" }, tag.name))
-            );
-
-            const overdue = isTaskOverdue(task);
-            const dueDate = task.due_date
-                ? createElement(
-                    "p",
-                    { className: `due-date${overdue ? " overdue" : ""}` },
-                    `${overdue ? "Overdue" : "Due"}: ${task.due_date}`
-                )
-                : null;
-
             const card = createElement("article", { className: "card", draggable: true, dataset: { taskId: task.id } },
                 createElement("h3", { className: "card-title" }, task.title || `Task #${task.id}`),
                 description,
-                tags,
-                dueDate,
                 meta
             );
 
@@ -1229,15 +989,6 @@
         };
 
         elements.newTaskButton.addEventListener("click", () => openModal("create"));
-        elements.newTagButton.addEventListener("click", createTag);
-        elements.tagFilter.addEventListener("change", () => {
-            state.selectedTagId = elements.tagFilter.value;
-            fetchTasks();
-        });
-        elements.overdueFilter.addEventListener("change", () => {
-            state.overdueOnly = elements.overdueFilter.value === "true";
-            fetchTasks();
-        });
         elements.modalCloseButton.addEventListener("click", closeModal);
         elements.modalCancelButton.addEventListener("click", closeModal);
         elements.modal.addEventListener("click", handleOverlayClick);

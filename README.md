@@ -7,7 +7,7 @@ A minimal **Module 1** learning project: a Python/FastAPI REST API for managing 
 - **FastAPI** — HTTP API framework
 - **Pydantic** — request/response validation (models added in later modules)
 - **In-memory store** — module-level Python dictionary (added in later modules)
-- **No auth, no Docker** — a static task-board frontend is served by FastAPI
+- **No auth, no Docker, no frontend** — backend API only
 
 ## Project structure
 
@@ -21,8 +21,6 @@ task-tracker-api/
 │   └── store/           # In-memory task dictionary
 ├── tests/
 │   └── __init__.py 
-├── frontend/
-│   └── index.html       # Static task-board UI, served at /
 ├── .env.example
 ├── .gitignore
 ├── requirements.txt
@@ -71,7 +69,7 @@ task-tracker-api/
    Copy-Item .env.example .env
    ```
 
-## Run the application
+## Run the server
 
 From the project root (with the virtual environment active):
 
@@ -79,23 +77,7 @@ From the project root (with the virtual environment active):
 uvicorn app.main:app --reload --port 8000
 ```
 
-### Open the frontend
-
-With the backend running, open the task board in a browser:
-
-```
-http://127.0.0.1:8000/
-```
-
-The UI is served by the API itself, so no separate frontend server is needed.
-
-### Run tests
-
-From the project root (with the virtual environment active), run:
-
-```bash
-python -m pytest
-```
+The server reads `PORT` from `.env` when you pass it explicitly, or use the default above.
 
 ## Test the health endpoint
 
@@ -121,12 +103,3 @@ http://127.0.0.1:8000/docs
 ```
 
 Interactive OpenAPI docs are served automatically by FastAPI.
-
-## Mid-course project features
-
-This submission adds two end-to-end features:
-
-- **Tags/labels:** create tags, assign them to tasks, display tag chips, and filter by tag.
-- **Due dates and overdue filtering:** assign optional due dates, display overdue state, and filter incomplete past-due tasks.
-
-The project evidence is in [`docs/midcourse/`](docs/midcourse/), including user stories, the decision record, prompt log, verification record, and reflection.

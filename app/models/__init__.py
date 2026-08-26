@@ -1,10 +1,10 @@
 """Pydantic models for request/response validation."""
 
-from datetime import date, datetime
+from datetime import datetime
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class TaskStatus(str, Enum):
@@ -53,33 +53,6 @@ def _normalize_assignee(value: Optional[str]) -> Optional[str]:
     return value or None
 
 
-def _validate_tag_name(value: str) -> str:
-    value = value.strip()
-    if not value:
-        raise ValueError("name must not be blank")
-    if len(value) > 50:
-        raise ValueError("name must be at most 50 characters")
-    return value
-
-
-class TagCreate(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    name: str
-
-    @field_validator("name")
-    @classmethod
-    def validate_name(cls, v: str) -> str:
-        return _validate_tag_name(v)
-
-
-class TagResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    id: str
-    name: str
-
-
 class TaskCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -88,8 +61,6 @@ class TaskCreate(BaseModel):
     status: TaskStatus = TaskStatus.TODO
     priority: TaskPriority = TaskPriority.MEDIUM
     assignee: Optional[str] = Field(None, max_length=100)
-    tag_ids: list[str] = Field(default_factory=list)
-    due_date: date | None = None
 
     @field_validator("title")
     @classmethod
@@ -110,8 +81,6 @@ class TaskUpdate(BaseModel):
     status: Optional[TaskStatus] = None
     priority: Optional[TaskPriority] = None
     assignee: Optional[str] = Field(None, max_length=100)
-    tag_ids: Optional[list[str]] = None
-    due_date: date | None = None
 
     @field_validator("title")
     @classmethod
@@ -135,16 +104,5 @@ class TaskResponse(BaseModel):
     status: TaskStatus
     priority: TaskPriority
     assignee: Optional[str]
-    tags: list[TagResponse]
-    due_date: date | None
     created_at: datetime
     updated_at: datetime
-
-    @computed_field(return_type=bool)
-    @property
-    def is_overdue(self) -> bool:
-        return (
-            self.due_date is not None
-            and self.due_date < date.today()
-            and self.status != TaskStatus.DONE
-        )

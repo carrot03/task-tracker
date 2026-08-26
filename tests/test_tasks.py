@@ -119,7 +119,7 @@ def test_patch_invalid_transition_todo_to_done_returns_422(client, created_task)
 
 
 def test_patch_same_status_returns_422(client, created_task):
-    response = client.patch(f"/tasks/{created_task['id']}", json={"status": "Done"})
+    response = client.patch(f"/tasks/{created_task['id']}", json={"status": "ToDo"})
 
     assert response.status_code == 422
 
@@ -136,27 +136,3 @@ def test_delete_missing_returns_404(client):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Task with id does-not-exist not found"
-
-
-def test_patch_existing_task_with_valid_status_change_from_inprogress_to_done_and_description_update_returns_200(client):
-    create_response = client.post(
-        "/tasks",
-        json={
-            "title": "Implement auth",
-            "description": "Initial plan",
-            "status": "InProgress",
-            "priority": "High",
-            "assignee": "Alice",
-        },
-    )
-    task_id = create_response.json()["id"]
-
-    response = client.patch(
-        f"/tasks/{task_id}",
-        json={"status": "Done", "description": "Updated description"},
-    )
-
-    assert response.status_code == 200
-    body = response.json()
-    assert body["status"] == "Done"
-    assert body["description"] == "Updated description"
