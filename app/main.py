@@ -8,7 +8,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.business_rules import validate_status_transition
-from app.models import TagCreate, TagResponse, TaskCreate, TaskPriority, TaskResponse, TaskStatus, TaskUpdate
+from app.models import (
+    CommentCreate,
+    CommentResponse,
+    TagCreate,
+    TagResponse,
+    TaskCreate,
+    TaskPriority,
+    TaskResponse,
+    TaskStatus,
+    TaskUpdate,
+)
 from app import store
 
 load_dotenv()
@@ -218,6 +228,102 @@ def patch_task(task_id: str, payload: TaskUpdate) -> TaskResponse:
     if updated is None:
         raise HTTPException(status_code=404, detail=f"Task with id {task_id} not found")
     return updated
+
+
+@app.post(
+    "/tasks/{task_id}/comments",
+    response_model=CommentResponse,
+    status_code=status.HTTP_201_CREATED,
+    tags=["comments"],
+)
+def create_comment(task_id: str, payload: CommentCreate) -> CommentResponse:
+    """Create a new comment on a task.
+
+    Args:
+        task_id: The id of the task to comment on.
+        payload: The comment to create.
+
+    Returns:
+        CommentResponse: The newly created comment, with a generated
+            `id` and `created_at` timestamp.
+
+    Raises:
+        HTTPException: 404 Not Found if no task with `task_id` exists.
+    """
+    if store.get_task_by_id(task_id) is None:
+        raise HTTPException(status_code=404, detail=f"Task with id {task_id} not found")
+    return store.add_comment(task_id, payload)
+
+
+@app.get("/tasks/{task_id}/comments", response_model=list[CommentResponse], tags=["comments"])
+def list_comments(task_id: str) -> list[CommentResponse]:
+    """List all comments on a task.
+
+    Args:
+        task_id: The task's id.
+
+    Returns:
+        list[CommentResponse]: The task's comments, in creation order.
+
+    Raises:
+        HTTPException: 404 Not Found if no task with `task_id` exists.
+    """
+    if store.get_task_by_id(task_id) is None:
+        raise HTTPException(status_code=404, detail=f"Task with id {task_id} not found")
+    return store.get_comments_by_task_id(task_id)
+
+
+@app.get(
+    "/tasks/{task_id}/comments/{comment_id}",
+    response_model=CommentResponse,
+    tags=["comments"],
+)
+def get_comment(task_id: str, comment_id: str) -> CommentResponse:
+    """Retrieve a single comment by id, scoped to a task.
+
+    Args:
+        task_id: The task's id.
+        comment_id: The comment's id.
+
+    Returns:
+        CommentResponse: The matching comment.
+
+    Raises:
+        HTTPException: 404 Not Found if no task with `task_id` exists,
+            or no comment with `comment_id` exists on that task.
+    """
+    if store.get_task_by_id(task_id) is None:
+        raise HTTPException(status_code=404, detail=f"Task with id {task_id} not found")
+    comment = store.get_comment_by_id(task_id, comment_id)
+    if comment is None:
+        raise HTTPException(status_code=404, detail=f"Comment with id {comment_id} not found")
+    return comment
+
+
+@app.delete(
+    "/tasks/{task_id}/comments/{comment_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["comments"],
+)
+def delete_comment(task_id: str, comment_id: str) -> None:
+    """Delete a comment by id, scoped to a task.
+
+    Args:
+        task_id: The task's id.
+        comment_id: The comment's id.
+
+    Returns:
+        None: Responds with 204 No Content on success.
+
+    Raises:
+        HTTPException: 404 Not Found if no task with `task_id` exists,
+            or no comment with `comment_id` exists on that task.
+    """
+    if store.get_task_by_id(task_id) is None:
+        raise HTTPException(status_code=404, detail=f"Task with id {task_id} not found")
+    deleted = store.delete_comment(task_id, comment_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail=f"Comment with id {comment_id} not found")
 
 
 # Mount this last so the API routes above always take precedence.  Serving the

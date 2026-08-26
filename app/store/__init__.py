@@ -5,6 +5,8 @@ from typing import Optional
 from uuid import uuid4
 
 from app.models import (
+    CommentCreate,
+    CommentResponse,
     TagCreate,
     TagResponse,
     TaskCreate,
@@ -16,6 +18,7 @@ from app.models import (
 
 _tasks: dict[str, TaskResponse] = {}
 _tags: dict[str, TagResponse] = {}
+_comments: dict[str, CommentResponse] = {}
 
 
 def add_tag(payload: TagCreate) -> Optional[TagResponse]:
@@ -185,6 +188,9 @@ def update_task(task_id: str, payload: TaskUpdate) -> Optional[TaskResponse]:
 def delete_task(task_id: str) -> bool:
     """Remove a task from storage.
 
+    Also deletes any comments belonging to the task, so no comment is
+    ever left referencing a `task_id` that no longer exists.
+
     Args:
         task_id: The id of the task to delete.
 
@@ -192,9 +198,94 @@ def delete_task(task_id: str) -> bool:
         bool: True if a task was deleted, False if no task with
             `task_id` existed.
     """
-    return _tasks.pop(task_id, None) is not None
+    deleted = _tasks.pop(task_id, None) is not None
+    if deleted:
+        delete_comments_by_task_id(task_id)
+    return deleted
+
+
+def add_comment(task_id: str, payload: CommentCreate) -> CommentResponse:
+    """Create and store a new comment on a task.
+
+    Args:
+        task_id: The id of the task the comment belongs to.
+        payload: The comment to create.
+
+    Returns:
+        CommentResponse: The newly created and stored comment.
+    """
+    comment = CommentResponse(
+        id=str(uuid4()),
+        task_id=task_id,
+        author=payload.author,
+        body=payload.body,
+        created_at=datetime.now(timezone.utc),
+    )
+    _comments[comment.id] = comment
+    return comment
+
+
+def get_comments_by_task_id(task_id: str) -> list[CommentResponse]:
+    """Return every comment belonging to a task, in creation order.
+
+    Args:
+        task_id: The task's id.
+
+    Returns:
+        list[CommentResponse]: The task's comments, in dict iteration
+            (insertion) order.
+    """
+    return [comment for comment in _comments.values() if comment.task_id == task_id]
+
+
+def get_comment_by_id(task_id: str, comment_id: str) -> Optional[CommentResponse]:
+    """Look up a single comment by id, scoped to a task.
+
+    Args:
+        task_id: The task's id the comment must belong to.
+        comment_id: The comment's id.
+
+    Returns:
+        Optional[CommentResponse]: The matching comment, or None if no
+            comment with `comment_id` exists on `task_id`.
+    """
+    comment = _comments.get(comment_id)
+    if comment is None or comment.task_id != task_id:
+        return None
+    return comment
+
+
+def delete_comment(task_id: str, comment_id: str) -> bool:
+    """Remove a single comment from storage, scoped to a task.
+
+    Args:
+        task_id: The task's id the comment must belong to.
+        comment_id: The id of the comment to delete.
+
+    Returns:
+        bool: True if a matching comment was deleted, False if no
+            comment with `comment_id` existed on `task_id`.
+    """
+    if get_comment_by_id(task_id, comment_id) is None:
+        return False
+    del _comments[comment_id]
+    return True
+
+
+def delete_comments_by_task_id(task_id: str) -> None:
+    """Remove every comment belonging to a task.
+
+    Args:
+        task_id: The task's id.
+
+    Returns:
+        None.
+    """
+    for comment_id in [c.id for c in _comments.values() if c.task_id == task_id]:
+        del _comments[comment_id]
 
 
 def _reset() -> None:
     _tasks.clear()
     _tags.clear()
+    _comments.clear()

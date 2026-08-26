@@ -62,6 +62,24 @@ def _validate_tag_name(value: str) -> str:
     return value
 
 
+def _validate_comment_author(value: str) -> str:
+    value = value.strip()
+    if not value:
+        raise ValueError("author must not be blank")
+    if len(value) > 100:
+        raise ValueError("author must be at most 100 characters")
+    return value
+
+
+def _validate_comment_body(value: str) -> str:
+    value = value.strip()
+    if not value:
+        raise ValueError("body must not be blank")
+    if len(value) > 2000:
+        raise ValueError("body must be at most 2000 characters")
+    return value
+
+
 class TagCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -78,6 +96,33 @@ class TagResponse(BaseModel):
 
     id: str
     name: str
+
+
+class CommentCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    author: str
+    body: str
+
+    @field_validator("author")
+    @classmethod
+    def validate_author(cls, v: str) -> str:
+        return _validate_comment_author(v)
+
+    @field_validator("body")
+    @classmethod
+    def validate_body(cls, v: str) -> str:
+        return _validate_comment_body(v)
+
+
+class CommentResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    task_id: str
+    author: str
+    body: str
+    created_at: datetime
 
 
 class TaskCreate(BaseModel):

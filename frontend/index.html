@@ -352,6 +352,75 @@
         font-size: 0.95rem;
     }
 
+    .comment-list {
+        display: grid;
+        gap: 0.75rem;
+        margin: 0 0 0.9rem;
+        max-height: 220px;
+        overflow-y: auto;
+    }
+
+    .comment-item {
+        border: 1px solid var(--border);
+        border-radius: 0.9rem;
+        background: var(--surface-strong);
+        padding: 0.75rem 0.9rem;
+    }
+
+    .comment-item-header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin: 0 0 0.35rem;
+    }
+
+    .comment-author {
+        font-weight: 700;
+        font-size: 0.9rem;
+    }
+
+    .comment-timestamp {
+        color: var(--muted);
+        font-size: 0.78rem;
+    }
+
+    .comment-body {
+        margin: 0;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+    }
+
+    .comment-delete-button {
+        border: none;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 0.78rem;
+        padding: 0;
+        margin-top: 0.4rem;
+    }
+
+    .comment-delete-button:hover {
+        color: var(--danger);
+    }
+
+    .comment-form {
+        display: grid;
+        gap: 0.6rem;
+    }
+
+    .comment-form[hidden] {
+        display: none;
+    }
+
+    .comment-hint {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+    }
+
     .column-list.drag-over {
         background: rgba(37, 99, 235, 0.08);
     }
@@ -639,6 +708,17 @@
                         <legend>Tags</legend>
                         <div id="task-tags" class="tag-checkboxes"></div>
                     </fieldset>
+
+                    <fieldset id="task-comments-section" class="form-field" hidden>
+                        <legend>Comments</legend>
+                        <p id="task-comments-hint" class="comment-hint" hidden>Save the task first to add comments.</p>
+                        <div id="task-comments-list" class="comment-list"></div>
+                        <div id="task-comments-form" class="comment-form">
+                            <input id="comment-author" class="input" type="text" placeholder="Your name" autocomplete="off" />
+                            <textarea id="comment-body" class="textarea" placeholder="Write a comment..." style="min-height: 70px;"></textarea>
+                            <button id="add-comment-button" class="button secondary" type="button">Add Comment</button>
+                        </div>
+                    </fieldset>
                 </div>
 
                 <div class="modal-footer">
@@ -667,7 +747,8 @@
             overdueOnly: false,
             boardState: "loading",
             dragError: "",
-            modal: null
+            modal: null,
+            comments: []
         };
 
         const elements = {
@@ -689,7 +770,14 @@
             newTagButton: document.getElementById("new-tag-button"),
             modalCloseButton: document.getElementById("modal-close-button"),
             modalCancelButton: document.getElementById("modal-cancel-button"),
-            themeToggle: document.getElementById("theme-toggle")
+            themeToggle: document.getElementById("theme-toggle"),
+            commentsSection: document.getElementById("task-comments-section"),
+            commentsHint: document.getElementById("task-comments-hint"),
+            commentsList: document.getElementById("task-comments-list"),
+            commentsForm: document.getElementById("task-comments-form"),
+            commentAuthorField: document.getElementById("comment-author"),
+            commentBodyField: document.getElementById("comment-body"),
+            addCommentButton: document.getElementById("add-comment-button")
         };
 
         const createElement = (tag, attrs = {}, ...children) => {
@@ -844,6 +932,18 @@
                 elements.statusField.value = "ToDo";
             }
 
+            elements.commentsSection.hidden = false;
+            if (mode === "edit" && task) {
+                elements.commentsHint.hidden = true;
+                elements.commentsForm.hidden = false;
+                fetchComments(task.id);
+            } else {
+                elements.commentsHint.hidden = false;
+                elements.commentsForm.hidden = true;
+                state.comments = [];
+                renderComments();
+            }
+
             elements.modal.classList.remove("hidden");
             elements.modal.setAttribute("aria-hidden", "false");
             elements.titleField.focus();
@@ -852,10 +952,96 @@
 
         const closeModal = () => {
             state.modal = null;
+            state.comments = [];
             elements.modal.classList.add("hidden");
             elements.modal.setAttribute("aria-hidden", "true");
             clearModalError();
             document.removeEventListener("keydown", handleModalKeydown);
+        };
+
+        const renderComments = () => {
+            elements.commentsList.replaceChildren();
+
+            if (state.comments.length === 0) {
+                elements.commentsList.appendChild(
+                    createElement("p", { className: "tag-checkboxes-empty" }, "No comments yet.")
+                );
+                return;
+            }
+
+            state.comments.forEach((comment) => {
+                const deleteButton = createElement(
+                    "button",
+                    { className: "comment-delete-button", type: "button" },
+                    "Delete"
+                );
+                deleteButton.addEventListener("click", () => handleDeleteComment(comment.id));
+
+                const header = createElement(
+                    "div",
+                    { className: "comment-item-header" },
+                    createElement("span", { className: "comment-author" }, comment.author),
+                    createElement("span", { className: "comment-timestamp" }, new Date(comment.created_at).toLocaleString())
+                );
+
+                elements.commentsList.appendChild(createElement(
+                    "div",
+                    { className: "comment-item" },
+                    header,
+                    createElement("p", { className: "comment-body" }, comment.body),
+                    deleteButton
+                ));
+            });
+        };
+
+        const fetchComments = async (taskId) => {
+            try {
+                const comments = await fetchJson(`${API_BASE}/tasks/${taskId}/comments`);
+                state.comments = Array.isArray(comments) ? comments : [];
+            } catch {
+                state.comments = [];
+            }
+            renderComments();
+        };
+
+        const handleAddComment = async () => {
+            const task = state.modal?.task;
+            if (!task) return;
+
+            const author = elements.commentAuthorField.value.trim();
+            const body = elements.commentBodyField.value.trim();
+            if (!author || !body) {
+                setModalError("Comment author and body are required.");
+                return;
+            }
+
+            try {
+                const comment = await fetchJson(`${API_BASE}/tasks/${task.id}/comments`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ author, body })
+                });
+                state.comments.push(comment);
+                elements.commentAuthorField.value = "";
+                elements.commentBodyField.value = "";
+                clearModalError();
+                renderComments();
+            } catch (error) {
+                setModalError(error.payload?.detail || "Unable to add comment.");
+            }
+        };
+
+        const handleDeleteComment = async (commentId) => {
+            const task = state.modal?.task;
+            if (!task) return;
+
+            try {
+                await fetchJson(`${API_BASE}/tasks/${task.id}/comments/${commentId}`, { method: "DELETE" });
+                state.comments = state.comments.filter((comment) => comment.id !== commentId);
+                renderComments();
+            } catch (error) {
+                setModalError(error.payload?.detail || "Unable to delete comment.");
+            }
         };
 
         const handleModalKeydown = (event) => {
@@ -1242,6 +1428,7 @@
         elements.modalCancelButton.addEventListener("click", closeModal);
         elements.modal.addEventListener("click", handleOverlayClick);
         elements.taskForm.addEventListener("submit", handleModalSubmit);
+        elements.addCommentButton.addEventListener("click", handleAddComment);
 
         initTheme();
         fetchTasks();
