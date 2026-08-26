@@ -143,6 +143,15 @@ class TaskResponse(BaseModel):
     @computed_field(return_type=bool)
     @property
     def is_overdue(self) -> bool:
+        """Whether this task is overdue.
+
+        Computed at read time from `due_date`/`status` rather than
+        stored, so it never goes stale.
+
+        Returns:
+            bool: True if `due_date` is set, is strictly before today,
+                and `status` is not Done. False otherwise.
+        """
         return (
             self.due_date is not None
             and self.due_date < date.today()

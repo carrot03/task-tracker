@@ -10,6 +10,24 @@ VALID_TRANSITIONS: frozenset[tuple[TaskStatus, TaskStatus]] = frozenset({
 
 
 def validate_status_transition(current: TaskStatus, new: TaskStatus) -> None:
+    """Validate that a task status change is allowed.
+
+    Same-status "transitions" are always allowed (treated as a no-op).
+    Otherwise, `(current, new)` must be one of the allowed edges in
+    `VALID_TRANSITIONS`: ToDo -> InProgress, InProgress -> Done, or
+    Done -> InProgress.
+
+    Args:
+        current: The task's current status.
+        new: The requested new status.
+
+    Returns:
+        None.
+
+    Raises:
+        HTTPException: 422 Unprocessable Entity if `current != new` and
+            `(current, new)` is not in `VALID_TRANSITIONS`.
+    """
     if current == new:
         return
 
