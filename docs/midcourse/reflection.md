@@ -1,9 +1,0 @@
-# Reflection
-
-I used an AI coding assistant in three different ways during this sprint. First, I used it to turn an initial feature idea into user stories and constraints. This helped me notice that “tags” could easily expand into rename, delete, and management screens, so I narrowed the scope before implementation. Second, I used it to suggest the smallest API and data-model changes that fit the existing FastAPI and in-memory store. Third, I used it to draft focused pytest cases and to reason about edge cases such as a due date equal to today.
-
-The most useful AI contribution was identifying a derived overdue field rather than storing an overdue boolean. That keeps the result correct when the date changes and when a task is completed. The assistant also helped me enumerate the boundary cases, which led to tests for today, future, past, missing dates, and completed tasks.
-
-AI slowed me down when my first tags prompt was too broad. The response assumed a full tag-management feature and produced implementation detail before I had decided the scope. I discarded that answer and rewrote the prompt to request only user stories and constraints. This made the next design discussion much more useful.
-
-My review changed the result in two important places. I rejected tag rename/delete as out of scope, and I corrected the overdue rule so only dates strictly before today count. I also reviewed the generated frontend behavior rather than treating passing API tests as sufficient: the board now exposes date entry, tag selection, card chips, and both filters. The final verification combined automated tests, manual browser checks, and two break tests, leaving me with evidence for both the code and the decisions behind it.
